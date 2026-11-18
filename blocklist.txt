@@ -1,0 +1,2 @@
+# دومينات محظورة (سطر لكل دومين، والـ subdomains بتتحظر تلقائي)
+# example-phishing.com

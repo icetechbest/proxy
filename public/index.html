@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>متصفح</title>
+<style>
+:root{--bg:#0f1117;--bar:#171a24;--tab:#1f2332;--act:#2b3148;--tx:#eceef5;--mut:#8b90a5;--ac:#4f7cff;--bd:#272b3b}
+:root[data-t=light]{--bg:#fff;--bar:#eef0f6;--tab:#e1e4ee;--act:#fff;--tx:#161925;--mut:#667;--bd:#d6dae8}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px system-ui,"Segoe UI",Tahoma;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+button,input,select{font:inherit;color:var(--tx)}button{cursor:pointer;border:0;background:transparent;border-radius:8px}button:hover{background:var(--act)}
+#tabs{display:flex;gap:4px;padding:6px 6px 0;background:var(--bar);overflow-x:auto;scrollbar-width:none;flex:none}
+.tab{display:flex;align-items:center;gap:6px;min-width:120px;max-width:200px;flex:0 0 auto;padding:8px 8px;background:var(--tab);border-radius:10px 10px 0 0;cursor:pointer;user-select:none}
+.tab.on{background:var(--act)}.tab span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tab img,.tab i{width:16px;height:16px;flex:none;font-style:normal;font-size:13px;line-height:16px;text-align:center}
+.tab b{font-weight:400;padding:0 5px;border-radius:6px;color:var(--mut)}.tab b:hover{background:var(--bd)}
+.spin{border:2px solid var(--bd);border-top-color:var(--ac);border-radius:50%;animation:s .7s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+#nt{flex:none;width:34px;font-size:20px;color:var(--mut)}
+#bar{display:flex;gap:4px;align-items:center;padding:6px;background:var(--act);border-bottom:1px solid var(--bd);flex:none;position:relative}
+#bar button{width:36px;height:36px;font-size:16px;flex:none}
+#url{flex:1;min-width:0;direction:ltr;text-align:start;padding:9px 14px;border-radius:99px;border:1px solid var(--bd);background:var(--bar)}
+#url:focus{outline:2px solid var(--ac)}
+#views{flex:1;position:relative;min-height:0}
+iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;display:none}iframe.on{display:block}
+#start{position:absolute;inset:0;overflow:auto;padding:24px 16px;display:none}#start.on{display:block}
+#start .w{max-width:620px;margin:6vh auto 0}h1{text-align:center;margin:0 0 18px}
+#sf{display:flex;gap:8px}#sf input{flex:1;min-width:0;direction:ltr;padding:13px;border-radius:12px;border:1px solid var(--bd);background:var(--bar)}
+#sf button,.pill{padding:12px 16px;border-radius:12px;background:var(--ac);color:#fff}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;justify-content:center}.chips a{padding:8px 14px;border-radius:99px;background:var(--bar);border:1px solid var(--bd);color:var(--tx);text-decoration:none;font-size:14px}
+.st{display:flex;gap:6px;margin:18px 0 8px}.st button{flex:1;padding:10px;background:var(--bar)}.st .on{background:var(--ac);color:#fff}
+.li{display:flex;align-items:center;gap:8px;background:var(--bar);border:1px solid var(--bd);border-radius:12px;padding:9px 12px;margin-bottom:8px}
+.li a{flex:1;min-width:0;color:var(--tx);text-decoration:none}.li b,.li small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:start}.li small{color:var(--mut)}.li b{font-weight:500}
+.em{color:var(--mut);text-align:center;padding:18px}
+#menu{position:absolute;top:46px;left:6px;background:var(--act);border:1px solid var(--bd);border-radius:12px;padding:6px;min-width:210px;display:none;z-index:9;box-shadow:0 8px 30px #0006}
+#menu.on{display:block}#menu button,#menu label{display:flex;width:100%;padding:10px;text-align:start;gap:8px;align-items:center;font-size:14px;border-radius:8px}
+#menu select{flex:1;background:var(--bar);border:1px solid var(--bd);border-radius:6px;padding:4px}#menu hr{border:0;border-top:1px solid var(--bd);margin:4px 0}
+#ld{height:2px;background:var(--ac);width:0;transition:width .3s;flex:none}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:99px;display:none;z-index:20}
+</style></head>
+<body>
+<div id="tabs"></div>
+<div id="bar">
+  <button id="bk" title="رجوع">→</button><button id="fw" title="تقدم">←</button><button id="rl" title="تحديث">↻</button>
+  <input id="url" placeholder="اكتب رابط أو كلمة بحث" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <button id="star" title="المفضلة">☆</button><button id="mn" title="القائمة">⋮</button>
+  <div id="menu">
+    <button data-a="new">➕ تاب جديد</button><button data-a="dup">⧉ تكرار التاب</button><button data-a="others">✕ اقفل باقي التابات</button><hr>
+    <button data-a="bm">⭐ المفضلة</button><button data-a="hist">🕘 السجل</button><button data-a="full">⤢ افتح الصفحة كاملة</button><hr>
+    <label>🔎 البحث <select id="se"><option value="https://html.duckduckgo.com/html/?q=">DuckDuckGo</option><option value="https://www.bing.com/search?q=">Bing</option><option value="https://en.wikipedia.org/w/index.php?search=">Wikipedia</option></select></label>
+    <button data-a="theme">🌓 الوضع الداكن/الفاتح</button><button data-a="clr">🗑 امسح السجل</button>
+  </div>
+</div>
+<div id="ld"></div>
+<div id="views">
+  <div id="start"><div class="w">
+    <h1>🌐 متصفح</h1>
+    <form id="sf"><input id="sq" placeholder="ابحث أو اكتب رابط" autocomplete="off"><button>اذهب</button></form>
+    <div class="chips" id="chips"></div>
+    <div class="st"><button id="sb" class="on">⭐ المفضلة</button><button id="sh">🕘 السجل</button></div>
+    <div id="sl"></div>
+  </div></div>
+</div>
+<div id="toast"></div>
+<script>
+const $=(s,r=document)=>r.querySelector(s), root=document.documentElement;
+const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const GO=u=>'/_go?u='+encodeURIComponent(u), MAX=20;
+let tabs=[], active=null, listTab='px_bm'; const frames=new Map();
+const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const cur=()=>tabs.find(t=>t.id===active);
+function toast(m){const e=$('#toast');e.textContent=m;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',1800)}
+function norm(v){v=v.trim();if(!v)return'';if(/^[a-z]+:\/\//i.test(v))return v;
+  return(/^[\w-]+(\.[\w-]+)+([/:?#]|$)/.test(v)&&!/\s/.test(v)||/^localhost(:\d+)?/.test(v))?'https://'+v:$('#se').value+encodeURIComponent(v)}
+function safeProxy(u){try{const a=new URL(u,location.href);if(!/^https?:$/.test(a.protocol))return null;
+  return(a.host===location.host||a.hostname.endsWith('.'+location.hostname))?a.href:null}catch{return null}}
+const host=u=>{try{return new URL(u).hostname}catch{return u}};
+function save(){LS.set('px_tabs',{active,tabs:tabs.map(({id,url,title})=>({id,url,title}))})}
+
+function mkFrame(t,src){
+  let f=frames.get(t.id);
+  if(!f){f=document.createElement('iframe');f.allow='fullscreen; autoplay; clipboard-write; encrypted-media';f.referrerPolicy='no-referrer';
+    f.onload=()=>{t.loading=false;render();if(t.id===active)bar()};$('#views').append(f);frames.set(t.id,f)}
+  t.loading=true;f.src=src;return f}
+function nav(t,url){t.url=url;t.title='';t.fav='';mkFrame(t,GO(url));select(t.id);render();save()}
+function newTab(url='',opts={}){
+  if(tabs.length>=MAX){toast('وصلت للحد الأقصى للتابات');return null}
+  const t={id:uid(),url:'',title:'',fav:'',loading:false};
+  if(opts.after){const i=tabs.findIndex(x=>x.id===opts.after);tabs.splice(i+1,0,t)}else tabs.push(t);
+  if(opts.proxy){t.url=opts.url||'';mkFrame(t,opts.proxy)}else if(url){t.url=url;mkFrame(t,GO(url))}
+  if(opts.bg){render();save()}else select(t.id);return t}
+function select(id){active=id;const t=cur();
+  if(t.url&&!frames.has(id))mkFrame(t,GO(t.url));
+  frames.forEach((f,k)=>f.classList.toggle('on',k===id));
+  $('#start').classList.toggle('on',!frames.has(id));
+  if(!frames.has(id))renderList();
+  render();bar();save();document.title=(t.title||'متصفح')}
+function close(id){const i=tabs.findIndex(t=>t.id===id);if(i<0)return;
+  const f=frames.get(id);if(f){f.src='about:blank';f.remove();frames.delete(id)}
+  tabs.splice(i,1);if(!tabs.length)return newTab();
+  if(id===active)select(tabs[Math.min(i,tabs.length-1)].id);else{render();save()}}
+function render(){const el=$('#tabs');el.innerHTML='';
+  for(const t of tabs){const d=document.createElement('div');d.className='tab'+(t.id===active?' on':'');
+    let ic;if(t.loading){ic=document.createElement('i');ic.className='spin'}
+    else if(t.fav){ic=document.createElement('img');ic.src=t.fav;ic.onerror=()=>{const i=document.createElement('i');i.textContent='🌐';ic.replaceWith(i)}}
+    else{ic=document.createElement('i');ic.textContent='🌐'}
+    const s=document.createElement('span');s.textContent=t.title||(t.url?host(t.url):'تاب جديد');
+    const x=document.createElement('b');x.textContent='✕';x.onclick=e=>{e.stopPropagation();close(t.id)};
+    d.append(ic,s,x);d.onclick=()=>select(t.id);d.onauxclick=e=>{if(e.button===1)close(t.id)};d.dataset.id=t.id;el.append(d)}
+  const b=document.createElement('button');b.id='nt';b.textContent='＋';b.onclick=()=>newTab();el.append(b);
+  const a=$('.tab.on',el);if(a)a.scrollIntoView({inline:'nearest',block:'nearest'});
+  const ld=$('#ld'),c=cur();ld.style.width=c&&c.loading?'70%':'0'}
+function bar(){const t=cur();if(document.activeElement!==$('#url'))$('#url').value=t&&t.url||'';
+  $('#star').textContent=t&&LS.get('px_bm',[]).some(b=>b.u===t.url)?'★':'☆';document.title=(t&&t.title)||'متصفح'}
+function cmd(c){const f=frames.get(active),t=cur();
+  if(c==='reload'&&(!f||!t.url)){if(t.url)nav(t,t.url);return}
+  if(f&&f.contentWindow)f.contentWindow.postMessage({px:1,cmd:c},'*')}
+function addHist(t){const h=LS.get('px_hist',[]);if(h[0]&&h[0].u===t.url){h[0].t=t.title||h[0].t}else h.unshift({t:t.title||t.url,u:t.url,d:Date.now()});LS.set('px_hist',h.slice(0,200))}
+
+addEventListener('message',e=>{const d=e.data;if(!d||d.px!==1)return;
+  const t=tabs.find(x=>{const f=frames.get(x.id);return f&&f.contentWindow===e.source});if(!t)return;
+  if(d.type==='meta'){if(typeof d.url!=='string'||!/^https?:\/\//i.test(d.url))return;
+    t.url=d.url;t.title=String(d.title||'').slice(0,200);t.fav=typeof d.fav==='string'?d.fav:'';t.loading=false;
+    addHist(t);render();save();if(t.id===active)bar()}
+  else if(d.type==='newtab'||d.type==='navigate'){const p=safeProxy(d.proxy);if(!p)return;
+    if(d.type==='newtab')newTab('',{proxy:p,after:t.id});else{mkFrame(t,p);render()}}});
+
+// address bar & buttons
+$('#url').onkeydown=e=>{if(e.key==='Enter'){const u=norm($('#url').value);if(u){nav(cur(),u);$('#url').blur()}}};
+$('#url').onfocus=e=>e.target.select();$('#url').onblur=bar;
+$('#bk').onclick=()=>cmd('back');$('#fw').onclick=()=>cmd('forward');$('#rl').onclick=()=>cmd('reload');
+$('#star').onclick=()=>{const t=cur();if(!t||!t.url)return;let b=LS.get('px_bm',[]);
+  if(b.some(x=>x.u===t.url)){b=b.filter(x=>x.u!==t.url);toast('اتشالت من المفضلة')}else{b.unshift({t:t.title||t.url,u:t.url});toast('اتحفظت ⭐')}LS.set('px_bm',b);bar()};
+// menu
+const menu=$('#menu');$('#mn').onclick=e=>{e.stopPropagation();menu.classList.toggle('on')};document.addEventListener('click',e=>{if(!menu.contains(e.target))menu.classList.remove('on')});
+menu.onclick=e=>{const a=e.target.closest('button');if(!a)return;const t=cur();menu.classList.remove('on');
+  ({new:()=>newTab(),dup:()=>t.url?newTab(t.url,{after:t.id}):newTab(),
+    others:()=>{tabs.filter(x=>x.id!==active).forEach(x=>close(x.id))},
+    bm:()=>{const n=newTab();listTab='px_bm';renderList()},hist:()=>{const n=newTab();listTab='px_hist';renderList()},
+    full:()=>t.url?window.open(GO(t.url),'_blank'):0,
+    theme:()=>{const l=root.dataset.t!=='light';root.dataset.t=l?'light':'';LS.set('px_th',l?'light':'dark')},
+    clr:()=>{if(confirm('تمسح السجل؟')){LS.set('px_hist',[]);renderList()}}})[a.dataset.a]?.()};
+$('#se').value=LS.get('px_se',$('#se').value);$('#se').onchange=()=>LS.set('px_se',$('#se').value);
+if(LS.get('px_th')==='light')root.dataset.t='light';
+// start page
+$('#sf').onsubmit=e=>{e.preventDefault();const u=norm($('#sq').value);if(u){$('#sq').value='';nav(cur(),u)}};
+[['Wikipedia','https://ar.wikipedia.org'],['DuckDuckGo','https://html.duckduckgo.com/html/'],['Hacker News','https://news.ycombinator.com'],['MDN','https://developer.mozilla.org']]
+ .forEach(([n,u])=>{const a=document.createElement('a');a.href='#';a.textContent=n;a.onclick=e=>{e.preventDefault();nav(cur(),u)};$('#chips').append(a)});
+$('#sb').onclick=()=>{listTab='px_bm';renderList()};$('#sh').onclick=()=>{listTab='px_hist';renderList()};
+function renderList(){const d=LS.get(listTab,[]),el=$('#sl');el.innerHTML='';
+  $('#sb').classList.toggle('on',listTab==='px_bm');$('#sh').classList.toggle('on',listTab==='px_hist');
+  if(!d.length){el.innerHTML='<div class="em">مفيش حاجة هنا لسه</div>';return}
+  d.slice(0,60).forEach((x,i)=>{const r=document.createElement('div');r.className='li';const a=document.createElement('a');a.href='#';
+    a.innerHTML='<b></b><small></small>';a.children[0].textContent=x.t||x.u;a.children[1].textContent=x.u;a.onclick=e=>{e.preventDefault();nav(cur(),x.u)};
+    const b=document.createElement('button');b.textContent='✕';b.onclick=()=>{d.splice(i,1);LS.set(listTab,d);renderList()};r.append(a,b);el.append(r)})}
+// shortcuts (Alt+…)
+addEventListener('keydown',e=>{if(!e.altKey)return;const k=e.key.toLowerCase();
+  if(k==='t'){e.preventDefault();newTab()}else if(k==='w'){e.preventDefault();close(active)}else if(k==='l'){e.preventDefault();$('#url').focus()}
+  else if(k==='r'){e.preventDefault();cmd('reload')}else if(e.key==='ArrowRight'){cmd('back')}else if(e.key==='ArrowLeft'){cmd('forward')}
+  else if(/^[1-9]$/.test(k)&&tabs[+k-1]){e.preventDefault();select(tabs[+k-1].id)}});
+// restore
+(function(){const s=LS.get('px_tabs',null);
+  if(s&&s.tabs&&s.tabs.length){tabs=s.tabs.map(t=>({id:t.id,url:t.url||'',title:t.title||'',fav:'',loading:false}));select(tabs.some(t=>t.id===s.active)?s.active:tabs[0].id)}
+  else newTab();renderList()})();
+</script></body></html>
