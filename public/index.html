@@ -2,6 +2,7 @@
 <html lang="ar" dir="rtl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>متصفح</title>
+<!--CFG-->
 <style>
 :root{--bg:#0f1117;--bar:#171a24;--tab:#1f2332;--act:#2b3148;--tx:#eceef5;--mut:#8b90a5;--ac:#4f7cff;--bd:#272b3b}
 :root[data-t=light]{--bg:#fff;--bar:#eef0f6;--tab:#e1e4ee;--act:#fff;--tx:#161925;--mut:#667;--bd:#d6dae8}
@@ -46,7 +47,7 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff
     <button data-a="new">➕ تاب جديد</button><button data-a="dup">⧉ تكرار التاب</button><button data-a="others">✕ اقفل باقي التابات</button><hr>
     <button data-a="bm">⭐ المفضلة</button><button data-a="hist">🕘 السجل</button><button data-a="full">⤢ افتح الصفحة كاملة</button><hr>
     <label>🔎 البحث <select id="se"><option value="https://html.duckduckgo.com/html/?q=">DuckDuckGo</option><option value="https://www.bing.com/search?q=">Bing</option><option value="https://en.wikipedia.org/w/index.php?search=">Wikipedia</option></select></label>
-    <button data-a="theme">🌓 الوضع الداكن/الفاتح</button><button data-a="clr">🗑 امسح السجل</button>
+    <button data-a="theme">🌓 الوضع الداكن/الفاتح</button><button data-a="clr">🗑 امسح السجل</button><hr><button data-a="out">🚪 خروج</button>
   </div>
 </div>
 <div id="ld"></div>
@@ -63,7 +64,11 @@ iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff
 <script>
 const $=(s,r=document)=>r.querySelector(s), root=document.documentElement;
 const LS={get(k,d){try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
-const GO=u=>'/_go?u='+encodeURIComponent(u), MAX=20;
+const GO=u=>u.startsWith(location.origin+'/_search')?u:'/_go?u='+encodeURIComponent(u), MAX=20;
+const CFG=window.__CFG||{};
+// الصفحات اللي جوه الفريم بتقرا top.location: نديها كائن فاضي بدل ما تضرب
+try{Object.defineProperty(window,'__pxlocation',{get:()=>({get href(){return''},set href(v){},assign(){},replace(){},reload(){},origin:'',host:'',hostname:'',protocol:'https:',pathname:'/',search:'',hash:''}),configurable:true})}catch{}
+const swReady=(CFG.sw&&navigator.serviceWorker)?navigator.serviceWorker.register('/sw.js',{scope:'/'}).then(()=>navigator.serviceWorker.ready).catch(()=>{}):Promise.resolve();
 let tabs=[], active=null, listTab='px_bm'; const frames=new Map();
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const cur=()=>tabs.find(t=>t.id===active);
@@ -121,7 +126,7 @@ addEventListener('message',e=>{const d=e.data;if(!d||d.px!==1)return;
     t.url=d.url;t.title=String(d.title||'').slice(0,200);t.fav=typeof d.fav==='string'?d.fav:'';t.loading=false;
     addHist(t);render();save();if(t.id===active)bar()}
   else if(d.type==='newtab'||d.type==='navigate'){const p=safeProxy(d.proxy);if(!p)return;
-    if(d.type==='newtab')newTab('',{proxy:p,after:t.id});else{mkFrame(t,p);render()}}});
+    if(d.type==='newtab')newTab('',{proxy:p,after:t.id,bg:!!d.bg});else{mkFrame(t,p);render()}}});
 
 // address bar & buttons
 $('#url').onkeydown=e=>{if(e.key==='Enter'){const u=norm($('#url').value);if(u){nav(cur(),u);$('#url').blur()}}};
@@ -137,7 +142,9 @@ menu.onclick=e=>{const a=e.target.closest('button');if(!a)return;const t=cur();m
     bm:()=>{const n=newTab();listTab='px_bm';renderList()},hist:()=>{const n=newTab();listTab='px_hist';renderList()},
     full:()=>t.url?window.open(GO(t.url),'_blank'):0,
     theme:()=>{const l=root.dataset.t!=='light';root.dataset.t=l?'light':'';LS.set('px_th',l?'light':'dark')},
+    out:()=>{location.href='/_logout'},
     clr:()=>{if(confirm('تمسح السجل؟')){LS.set('px_hist',[]);renderList()}}})[a.dataset.a]?.()};
+if(CFG.searx){const o=document.createElement('option');o.value=location.origin+'/_search?q=';o.textContent='SearXNG (بتاعي)';$('#se').prepend(o);$('#se').value=o.value}
 $('#se').value=LS.get('px_se',$('#se').value);$('#se').onchange=()=>LS.set('px_se',$('#se').value);
 if(LS.get('px_th')==='light')root.dataset.t='light';
 // start page
@@ -156,8 +163,8 @@ addEventListener('keydown',e=>{if(!e.altKey)return;const k=e.key.toLowerCase();
   if(k==='t'){e.preventDefault();newTab()}else if(k==='w'){e.preventDefault();close(active)}else if(k==='l'){e.preventDefault();$('#url').focus()}
   else if(k==='r'){e.preventDefault();cmd('reload')}else if(e.key==='ArrowRight'){cmd('back')}else if(e.key==='ArrowLeft'){cmd('forward')}
   else if(/^[1-9]$/.test(k)&&tabs[+k-1]){e.preventDefault();select(tabs[+k-1].id)}});
-// restore
-(function(){const s=LS.get('px_tabs',null);
+// restore (بعد ما الـ Service Worker يجهز)
+swReady.then(()=>{const s=LS.get('px_tabs',null);
   if(s&&s.tabs&&s.tabs.length){tabs=s.tabs.map(t=>({id:t.id,url:t.url||'',title:t.title||'',fav:'',loading:false}));select(tabs.some(t=>t.id===s.active)?s.active:tabs[0].id)}
-  else newTab();renderList()})();
+  else newTab();renderList()});
 </script></body></html>

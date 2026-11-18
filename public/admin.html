@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>لوحة الأدمن</title>
+<style>
+:root{--bg:#0f1117;--card:#171a24;--bd:#272b3b;--tx:#eceef5;--mut:#8b90a5;--ac:#4f7cff;--ok:#2ecc71;--bad:#ff5d5d;--warn:#f5a524}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,"Segoe UI",Tahoma;padding:16px}
+.w{max-width:1000px;margin:0 auto}h1{font-size:20px;margin:0}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:16px;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.stats div{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:12px;text-align:center}
+.stats b{display:block;font-size:22px}.stats span{color:var(--mut);font-size:13px}
+form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}label{display:grid;gap:4px;font-size:13px;color:var(--mut)}
+input{padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit;min-width:0}
+button{cursor:pointer;border:0;border-radius:8px;padding:9px 14px;background:var(--ac);color:#fff;font:inherit}button.g{background:#2a2f42}button.r{background:#4a2030;color:#ffb3b3}button.sm{padding:6px 9px;font-size:13px}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:760px}th,td{padding:10px 8px;text-align:start;border-bottom:1px solid var(--bd);font-size:14px;white-space:nowrap}th{color:var(--mut);font-weight:500;font-size:13px}
+.pill{padding:2px 10px;border-radius:99px;font-size:12px}.active{background:#143d27;color:var(--ok)}.disabled{background:#3d1e1e;color:var(--bad)}.expired{background:#3d3012;color:var(--warn)}
+.acts{display:flex;gap:5px}.hint{direction:ltr;unicode-bidi:plaintext;color:var(--mut);font-family:ui-monospace,monospace}
+#modal{position:fixed;inset:0;background:#000a;display:none;place-items:center;padding:16px;z-index:9}#modal.on{display:grid}
+#modal .b{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:20px;max-width:440px;width:100%}
+#nk{direction:ltr;text-align:center;font:600 20px ui-monospace,monospace;background:var(--bg);border:1px dashed var(--ac);border-radius:10px;padding:14px;margin:12px 0;word-break:break-all;user-select:all}
+.em{color:var(--mut);text-align:center;padding:20px}#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#000c;padding:8px 16px;border-radius:99px;display:none}
+</style></head><body><div class="w">
+<div class="top"><h1>🔑 لوحة الأدمن — المفاتيح</h1><div style="display:flex;gap:8px"><button class="g" onclick="location.href='/'">المتصفح</button><button class="g" onclick="logout()">خروج</button></div></div>
+<div class="card"><div class="stats" id="st"></div></div>
+<div class="card"><form id="f">
+<label>اسم المفتاح (لمين؟)<input id="label" placeholder="مثلاً: أحمد" maxlength="60" required></label>
+<label>المدة بالأيام (0 = بلا نهاية)<input id="days" type="number" min="0" value="30" style="width:150px"></label>
+<label>أقصى عدد أجهزة (0 = بلا حد)<input id="md" type="number" min="0" value="1" style="width:160px"></label>
+<button>➕ إنشاء مفتاح</button></form></div>
+<div class="card tw"><table><thead><tr><th>الاسم</th><th>المفتاح</th><th>الحالة</th><th>ينتهي</th><th>الأجهزة</th><th>الطلبات</th><th>آخر استخدام</th><th></th></tr></thead><tbody id="tb"></tbody></table><div id="em" class="em" style="display:none">مفيش مفاتيح لسه. أنشئ أول مفتاح من فوق.</div></div>
+</div>
+<div id="modal"><div class="b"><h3 style="margin:0 0 6px">✅ المفتاح اتعمل</h3><div style="color:var(--mut);font-size:13px">انسخه دلوقتي — بيظهر <b>مرة واحدة بس</b> (محفوظ مشفّر ومش هينفع تشوفه تاني).</div>
+<div id="nk"></div><div style="display:flex;gap:8px"><button id="cp">نسخ المفتاح</button><button class="g" id="cl">نسخ رابط الدخول</button><button class="g" onclick="modal.classList.remove('on')">تمام</button></div></div></div>
+<div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s), modal=$('#modal');
+const api=async(path,body)=>{const r=await fetch('/_admin/api/'+path,{method:body?'POST':'GET',headers:{'x-px-admin':'1','content-type':'application/json'},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){location.reload();return}const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||r.status);return j};
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',1800)};
+const ago=t=>{if(!t)return'—';const s=(Date.now()-t)/1000;return s<60?'دلوقتي':s<3600?Math.floor(s/60)+' د':s<86400?Math.floor(s/3600)+' س':Math.floor(s/86400)+' يوم'};
+const dt=t=>t?new Date(t).toLocaleDateString('ar-EG'):'بلا نهاية';
+const ST={active:'شغال',disabled:'معطّل',expired:'منتهي'};
+const el=(tag,txt,cls)=>{const e=document.createElement(tag);if(txt!=null)e.textContent=txt;if(cls)e.className=cls;return e};
+async function load(){
+  const {keys,persistent}=await api('keys');const tb=$('#tb');tb.innerHTML='';
+  $('#em').style.display=keys.length?'none':'block';
+  const act=keys.filter(k=>k.status==='active').length, req=keys.reduce((a,k)=>a+k.requests,0), dev=keys.reduce((a,k)=>a+k.devices,0);
+  $('#st').innerHTML='';for(const [n,v] of [['المفاتيح',keys.length],['شغالة',act],['الأجهزة',dev],['الطلبات',req.toLocaleString('en')]]){const d=el('div');d.append(el('b',v),el('span',n));$('#st').append(d)}
+  if(!persistent){const d=el('div');d.append(el('b','⚠️'),el('span','التخزين مؤقت! اربط Volume'));d.style.borderColor='var(--warn)';$('#st').append(d)}
+  for(const k of keys){const tr=el('tr');
+    tr.append(el('td',k.label),el('td',k.hint,'hint'));
+    const s=el('td');s.append(el('span',ST[k.status],'pill '+k.status));tr.append(s);
+    tr.append(el('td',dt(k.expires)),el('td',k.devices+' / '+(k.maxDevices||'∞')),el('td',k.requests.toLocaleString('en')),el('td',ago(k.lastUsed)+(k.lastIp?' · '+k.lastIp:'')));
+    const a=el('td'),w=el('div',null,'acts');
+    const b=(t,cls,fn)=>{const x=el('button',t,'sm '+cls);x.onclick=fn;w.append(x)};
+    b(k.status==='disabled'?'تفعيل':'تعطيل','g',()=>run(k.id,'toggle'));
+    b('+30 يوم','g',()=>run(k.id,'extend',30));
+    b('تصفير الأجهزة','g',()=>run(k.id,'reset'));
+    b('حذف','r',()=>{if(confirm('تحذف المفتاح "'+k.label+'" نهائياً؟'))run(k.id,'delete')});
+    a.append(w);tr.append(a);tb.append(tr)}
+}
+async function run(id,action,arg){try{await api('keys/'+id,{action,arg});load()}catch(e){toast('خطأ: '+e.message)}}
+$('#f').onsubmit=async e=>{e.preventDefault();try{
+  const {key}=await api('keys',{label:$('#label').value,days:+$('#days').value,maxDevices:+$('#md').value});
+  $('#nk').textContent=key;modal.classList.add('on');$('#label').value='';load();
+  $('#cp').onclick=()=>navigator.clipboard.writeText(key).then(()=>toast('اتنسخ ✓'));
+  $('#cl').onclick=()=>navigator.clipboard.writeText(location.origin+'/_login?k='+encodeURIComponent(key)).then(()=>toast('اتنسخ ✓'));
+}catch(e){toast('خطأ: '+e.message)}};
+function logout(){fetch('/_admin/logout',{method:'POST',headers:{'x-px-admin':'1'}}).then(()=>location.href='/_admin')}
+load();setInterval(load,15000);
+</script></body></html>

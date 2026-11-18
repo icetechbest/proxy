@@ -1,1 +1,9 @@
-{ "name": "simple-web-proxy", "version": "1.0.0", "main": "server.js", "scripts": { "start": "node server.js" }, "engines": { "node": ">=18" }, "license": "MIT" }
+{
+  "name": "simple-web-proxy",
+  "version": "2.0.0",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "acorn": "^8.14.0" },
+  "license": "MIT"
+}
